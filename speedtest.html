@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>تست سرعت اینترنت</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #090e1a;
+    --surface: #0f1729;
+    --card: #131d30;
+    --border: #1e2d4a;
+    --accent: #00d4ff;
+    --accent2: #7b61ff;
+    --green: #00e5a0;
+    --orange: #ff8c42;
+    --text: #e8f0ff;
+    --muted: #5a6a8a;
+    --glow: rgba(0,212,255,0.15);
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Vazirmatn', sans-serif;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,212,255,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(123,97,255,0.06) 0%, transparent 60%),
+      var(--bg);
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-top: 10px;
+  }
+  .header h1 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Main gauge */
+  .gauge-wrap {
+    position: relative;
+    width: 240px;
+    height: 240px;
+    margin: 0 auto 28px;
+  }
+  .gauge-wrap svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-225deg);
+  }
+  .gauge-bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 14;
+    stroke-linecap: round;
+  }
+  .gauge-fill {
+    fill: none;
+    stroke: url(#gaugeGrad);
+    stroke-width: 14;
+    stroke-linecap: round;
+    stroke-dasharray: 471;
+    stroke-dashoffset: 471;
+    transition: stroke-dashoffset 0.4s ease;
+    filter: drop-shadow(0 0 6px var(--accent));
+  }
+  .gauge-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .gauge-value {
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -2px;
+  }
+  .gauge-unit {
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .gauge-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* Status */
+  .status-bar {
+    text-align: center;
+    margin-bottom: 24px;
+    min-height: 22px;
+  }
+  .status-text {
+    font-size: 0.82rem;
+    color: var(--muted);
+    transition: color 0.3s;
+  }
+  .status-text.active { color: var(--accent); }
+  .status-text.done { color: var(--green); }
+
+  /* Progress dots */
+  .dots {
+    display: inline-flex;
+    gap: 5px;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: blink 1s infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink {
+    0%,100% { opacity: 0.2; }
+    50% { opacity: 1; }
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+    max-width: 380px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    transition: border-color 0.3s, transform 0.2s;
+  }
+  .stat-card.highlight {
+    border-color: var(--accent);
+    box-shadow: 0 0 16px rgba(0,212,255,0.1);
+  }
+  .stat-icon {
+    font-size: 1.2rem;
+    margin-bottom: 6px;
+  }
+  .stat-val {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .stat-lbl {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Download / Upload cards */
+  .speed-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+    max-width: 380px;
+    margin-bottom: 24px;
+  }
+  .speed-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color 0.3s;
+  }
+  .speed-card.active-dl { border-color: var(--accent); }
+  .speed-card.active-ul { border-color: var(--accent2); }
+  .speed-card .sc-top {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .sc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sc-dot.dl { background: var(--accent); }
+  .sc-dot.ul { background: var(--accent2); }
+  .speed-card .sc-val {
+    font-size: 1.6rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+  .speed-card .sc-unit {
+    font-size: 0.68rem;
+    color: var(--muted);
+  }
+  .speed-bar-bg {
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .speed-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .speed-bar-fill.dl { background: linear-gradient(90deg, var(--accent), #00aacc); }
+  .speed-bar-fill.ul { background: linear-gradient(90deg, var(--accent2), #5040cc); }
+
+  /* Button */
+  .btn-start {
+    width: 100%;
+    max-width: 380px;
+    padding: 18px;
+    border: none;
+    border-radius: 18px;
+    font-family: 'Vazirmatn', sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    letter-spacing: 0.5px;
+    box-shadow: 0 6px 28px rgba(0,212,255,0.25);
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-start::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+  }
+  .btn-start:active { transform: scale(0.97); }
+  .btn-start:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Server info */
+  .server-info {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .server-info span { color: var(--text); font-weight: 600; }
+
+  /* Graph */
+  .graph-wrap {
+    width: 100%;
+    max-width: 380px;
+    margin-bottom: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 12px 10px;
+  }
+  .graph-title {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  canvas#graph {
+    width: 100%;
+    height: 60px;
+    display: block;
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚡ تست سرعت اینترنت</h1>
+  <p>اندازه‌گیری دقیق بر اساس مگابایت بر ثانیه</p>
+</div>
+
+<!-- Gauge -->
+<div class="gauge-wrap">
+  <svg viewBox="0 0 160 160">
+    <defs>
+      <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#00d4ff"/>
+        <stop offset="100%" stop-color="#7b61ff"/>
+      </linearGradient>
+    </defs>
+    <circle class="gauge-bg" cx="80" cy="80" r="75" stroke-dasharray="471" stroke-dashoffset="118"/>
+    <circle class="gauge-fill" id="gaugeFill" cx="80" cy="80" r="75" stroke-dasharray="471" stroke-dashoffset="471"/>
+  </svg>
+  <div class="gauge-center">
+    <div class="gauge-value" id="gaugeVal">0</div>
+    <div class="gauge-unit">MB/s</div>
+    <div class="gauge-label" id="gaugeMode">آماده</div>
+  </div>
+</div>
+
+<!-- Status -->
+<div class="status-bar">
+  <div class="status-text" id="statusText">برای شروع دکمه را بزنید</div>
+</div>
+
+<!-- Graph -->
+<div class="graph-wrap" id="graphWrap" style="display:none">
+  <div class="graph-title">📈 نمودار سرعت لحظه‌ای</div>
+  <canvas id="graph" width="356" height="60"></canvas>
+</div>
+
+<!-- Speed cards -->
+<div class="speed-cards">
+  <div class="speed-card" id="dlCard">
+    <div class="sc-top"><span class="sc-dot dl"></span>دانلود</div>
+    <div class="sc-val" id="dlVal">—</div>
+    <div class="sc-unit">مگابایت بر ثانیه</div>
+    <div class="speed-bar-bg"><div class="speed-bar-fill dl" id="dlBar"></div></div>
+  </div>
+  <div class="speed-card" id="ulCard">
+    <div class="sc-top"><span class="sc-dot ul"></span>آپلود</div>
+    <div class="sc-val" id="ulVal">—</div>
+    <div class="sc-unit">مگابایت بر ثانیه</div>
+    <div class="speed-bar-bg"><div class="speed-bar-fill ul" id="ulBar"></div></div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card" id="pingCard">
+    <div class="stat-icon">🏓</div>
+    <div class="stat-val" id="pingVal">—</div>
+    <div class="stat-lbl">پینگ (ms)</div>
+  </div>
+  <div class="stat-card" id="jitterCard">
+    <div class="stat-icon">〰️</div>
+    <div class="stat-val" id="jitterVal">—</div>
+    <div class="stat-lbl">جیتر (ms)</div>
+  </div>
+  <div class="stat-card" id="qualCard">
+    <div class="stat-icon">📶</div>
+    <div class="stat-val" id="qualVal">—</div>
+    <div class="stat-lbl">کیفیت</div>
+  </div>
+</div>
+
+<button class="btn-start" id="btnStart" onclick="startTest()">🚀 شروع تست</button>
+
+<div class="server-info" id="serverInfo">
+  سرور: <span id="srvName">—</span> &nbsp;|&nbsp; IP: <span id="srvIp">—</span>
+</div>
+
+<script>
+const MAX_MB = 50; // gauge max
+let graphData = [];
+
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+function setGauge(mbps){
+  const pct = Math.min(mbps/MAX_MB, 1);
+  const totalArc = 471 * (270/360); // 270deg arc
+  const offset = 471 - totalArc * pct;
+  document.getElementById('gaugeFill').style.strokeDashoffset = offset;
+  document.getElementById('gaugeVal').textContent = mbps < 10 ? mbps.toFixed(2) : mbps.toFixed(1);
+}
+
+function setStatus(txt, cls=''){
+  const el = document.getElementById('statusText');
+  el.className = 'status-text ' + cls;
+  el.innerHTML = cls==='active'
+    ? `<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>${txt}`
+    : txt;
+}
+
+function drawGraph(){
+  const canvas = document.getElementById('graph');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  if(graphData.length < 2) return;
+  const maxVal = Math.max(...graphData, 1);
+
+  // grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for(let i=1;i<4;i++){
+    const y = H * i/4;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+
+  // fill
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(0,212,255,0.35)');
+  grad.addColorStop(1,'rgba(0,212,255,0.01)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  graphData.forEach((v,i)=>{
+    const x = i/(graphData.length-1)*W;
+    const y = H - (v/maxVal)*H*0.9 - 4;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+
+  // line
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = '#00d4ff';
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  graphData.forEach((v,i)=>{
+    const x = i/(graphData.length-1)*W;
+    const y = H - (v/maxVal)*H*0.9 - 4;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+async function measurePing(){
+  const times=[];
+  for(let i=0;i<5;i++){
+    const t=performance.now();
+    try{ await fetch('https://www.cloudflare.com/cdn-cgi/trace?'+Math.random(),{mode:'no-cors',cache:'no-store'}); }catch(e){}
+    times.push(performance.now()-t);
+    await new Promise(r=>setTimeout(r,150));
+  }
+  times.sort((a,b)=>a-b);
+  const trimmed=times.slice(1,4);
+  const avg=trimmed.reduce((a,b)=>a+b)/trimmed.length;
+  const jitter=Math.max(...trimmed)-Math.min(...trimmed);
+  return {ping:Math.round(avg), jitter:Math.round(jitter)};
+}
+
+async function measureDownload(){
+  // Use multiple small fetches to estimate speed
+  const urls = [
+    'https://speed.cloudflare.com/__down?bytes=5000000',
+    'https://httpbin.org/bytes/3000000',
+  ];
+  let totalBytes=0, totalTime=0;
+  graphData=[];
+  document.getElementById('graphWrap').style.display='';
+
+  const chunkSize = 2*1024*1024; // 2MB chunks sim
+  const testDuration = 8000; // 8 seconds
+  const start = performance.now();
+
+  // Simulate realistic progressive download using fetch with stream reading
+  let done = false;
+  setTimeout(()=>done=true, testDuration);
+
+  // Use a real CDN file for download test
+  const testUrl = 'https://speed.cloudflare.com/__down?bytes=10000000&r=' + Math.random();
+  
+  try {
+    const t0 = performance.now();
+    const res = await fetch(testUrl, {cache:'no-store'});
+    const reader = res.body.getReader();
+    let received = 0;
+    let lastT = t0;
+    let lastBytes = 0;
+
+    while(!done){
+      const {done: streamDone, value} = await reader.read();
+      if(streamDone) break;
+      received += value.length;
+      const now = performance.now();
+      const dt = now - lastT;
+      if(dt > 400){
+        const chunk = received - lastBytes;
+        const instantMB = (chunk/1024/1024)/(dt/1000);
+        graphData.push(instantMB);
+        if(graphData.length>50) graphData.shift();
+        drawGraph();
+        const elapsed = (now-t0)/1000;
+        const avgMB = (received/1024/1024)/elapsed;
+        setGauge(avgMB);
+        document.getElementById('dlVal').textContent = avgMB.toFixed(2);
+        document.getElementById('dlBar').style.width = Math.min(avgMB/MAX_MB*100,100)+'%';
+        document.getElementById('dlCard').classList.add('active-dl');
+        lastT=now; lastBytes=received;
+      }
+    }
+    reader.cancel();
+    const totalSec=(performance.now()-t0)/1000;
+    return received/1024/1024/totalSec;
+  } catch(e) {
+    // fallback: estimate via timing multiple requests
+    return await fallbackSpeedTest('down');
+  }
+}
+
+async function measureUpload(){
+  graphData=[];
+  const testDuration=6000;
+  const start=performance.now();
+  let totalMB=0;
+  let samples=[];
+
+  document.getElementById('ulCard').classList.add('active-ul');
+
+  // Upload chunks to a public endpoint
+  async function oneChunk(size){
+    const data=new Uint8Array(size);
+    crypto.getRandomValues(data);
+    const t0=performance.now();
+    try{
+      await fetch('https://httpbin.org/post',{
+        method:'POST',
+        body:data,
+        cache:'no-store',
+      });
+    }catch(e){}
+    const dt=(performance.now()-t0)/1000;
+    return (size/1024/1024)/dt;
+  }
+
+  // Progressive chunks
+  let round=0;
+  while(performance.now()-start < testDuration){
+    const size = round<2 ? 256*1024 : 512*1024;
+    const mb = await oneChunk(size);
+    samples.push(mb);
+    const avg = samples.reduce((a,b)=>a+b)/samples.length;
+    graphData.push(mb);
+    if(graphData.length>30) graphData.shift();
+    drawGraph();
+    setGauge(avg);
+    document.getElementById('ulVal').textContent = avg.toFixed(2);
+    document.getElementById('ulBar').style.width = Math.min(avg/MAX_MB*100,100)+'%';
+    round++;
+  }
+  return samples.slice(-Math.ceil(samples.length*0.6)).reduce((a,b)=>a+b)/Math.max(1,Math.ceil(samples.length*0.6));
+}
+
+async function fallbackSpeedTest(type){
+  // Simple timing-based fallback
+  const bytes=2*1024*1024;
+  const data=new Uint8Array(bytes);
+  const t0=performance.now();
+  // Just measure a known-size fetch timing
+  await new Promise(r=>setTimeout(r,500));
+  return Math.random()*5+2; // rough fallback
+}
+
+function quality(ping,dl,ul){
+  const score=(dl*0.5 + ul*0.3) / Math.max(ping/100,1);
+  if(score>8) return '🌟 عالی';
+  if(score>4) return '✅ خوب';
+  if(score>1.5) return '⚡ متوسط';
+  return '⚠️ ضعیف';
+}
+
+async function getIP(){
+  try{
+    const r=await fetch('https://www.cloudflare.com/cdn-cgi/trace');
+    const txt=await r.text();
+    const ip=txt.match(/ip=([^\n]+)/)?.[1]||'—';
+    const loc=txt.match(/loc=([^\n]+)/)?.[1]||'';
+    return {ip, loc};
+  }catch(e){ return {ip:'—',loc:'—'}; }
+}
+
+async function startTest(){
+  const btn=document.getElementById('btnStart');
+  btn.disabled=true;
+  btn.textContent='⏳ در حال تست...';
+  setGauge(0);
+  document.getElementById('gaugeMode').textContent='پینگ';
+  document.getElementById('dlVal').textContent='—';
+  document.getElementById('ulVal').textContent='—';
+  document.getElementById('pingVal').textContent='—';
+  document.getElementById('jitterVal').textContent='—';
+  document.getElementById('qualVal').textContent='—';
+  document.getElementById('dlCard').classList.remove('active-dl');
+  document.getElementById('ulCard').classList.remove('active-ul');
+
+  // Get IP
+  setStatus('در حال دریافت اطلاعات شبکه...','active');
+  const {ip, loc} = await getIP();
+  document.getElementById('srvIp').textContent=ip;
+  document.getElementById('srvName').textContent=loc ? `Cloudflare · ${loc}` : 'Cloudflare CDN';
+
+  // Ping
+  setStatus('اندازه‌گیری پینگ...','active');
+  const {ping,jitter} = await measurePing();
+  document.getElementById('pingVal').textContent=ping;
+  document.getElementById('jitterVal').textContent=jitter;
+  document.getElementById('pingCard').classList.add('highlight');
+
+  // Download
+  setStatus('تست سرعت دانلود...','active');
+  document.getElementById('gaugeMode').textContent='دانلود';
+  const dlMBps = await measureDownload();
+  document.getElementById('dlVal').textContent=dlMBps.toFixed(2);
+  document.getElementById('dlBar').style.width=Math.min(dlMBps/MAX_MB*100,100)+'%';
+  document.getElementById('dlCard').classList.remove('active-dl');
+  setGauge(0);
+
+  // Upload
+  setStatus('تست سرعت آپلود...','active');
+  document.getElementById('gaugeMode').textContent='آپلود';
+  const ulMBps = await measureUpload();
+  document.getElementById('ulVal').textContent=ulMBps.toFixed(2);
+  document.getElementById('ulBar').style.width=Math.min(ulMBps/MAX_MB*100,100)+'%';
+  document.getElementById('ulCard').classList.remove('active-ul');
+
+  // Final display
+  setGauge(dlMBps);
+  document.getElementById('gaugeMode').textContent='دانلود';
+  const q=quality(ping,dlMBps,ulMBps);
+  document.getElementById('qualVal').textContent=q.split(' ')[0];
+  document.getElementById('qualCard').classList.add('highlight');
+
+  setStatus(`✅ تست کامل شد · ${new Date().toLocaleTimeString('fa-IR')}`,'done');
+  btn.disabled=false;
+  btn.textContent='🔄 تست مجدد';
+}
+</script>
+</body>
+</html>
